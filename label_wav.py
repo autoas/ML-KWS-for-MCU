@@ -56,6 +56,15 @@ def load_labels(filename):
   return [line.rstrip() for line in tf.gfile.GFile(filename)]
 
 
+def show_result(predictions):
+    # Sort to show labels in order of confidence
+    top_k = predictions.argsort()[-FLAGS.how_many_labels:][::-1]
+    labels = load_labels(FLAGS.labels)
+    for node_id in top_k:
+        human_string = labels[node_id]
+        score = predictions[node_id]
+        print('%s (score = %.5f)' % (human_string, score))
+
 def run_graph(wav_data, labels, input_layer_name, output_layer_name,
               num_top_predictions):
   """Runs the audio data through the graph and prints predictions."""
@@ -67,14 +76,7 @@ def run_graph(wav_data, labels, input_layer_name, output_layer_name,
     softmax_tensor = sess.graph.get_tensor_by_name(output_layer_name)
     predictions, = sess.run(softmax_tensor, {input_layer_name: wav_data})
 
-    # Sort to show labels in order of confidence
-    top_k = predictions.argsort()[-num_top_predictions:][::-1]
-    for node_id in top_k:
-      human_string = labels[node_id]
-      score = predictions[node_id]
-      print('%s (score = %.5f)' % (human_string, score))
-
-    return 0
+    return predictions
 
 
 def label_wav(wav, labels, graph, input_name, output_name, how_many_labels):
@@ -95,13 +97,12 @@ def label_wav(wav, labels, graph, input_name, output_name, how_many_labels):
 
   with open(wav, 'rb') as wav_file:
     wav_data = wav_file.read()
-
-  run_graph(wav_data, labels_list, input_name, output_name, how_many_labels)
+  return run_graph(wav_data, labels_list, input_name, output_name, how_many_labels)
 
 
 def main(_):
   """Entry point for script, converts flags to arguments."""
-  label_wav(FLAGS.wav, FLAGS.labels, FLAGS.graph, FLAGS.input_name,
+  return label_wav(FLAGS.wav, FLAGS.labels, FLAGS.graph, FLAGS.input_name,
             FLAGS.output_name, FLAGS.how_many_labels)
 
 
